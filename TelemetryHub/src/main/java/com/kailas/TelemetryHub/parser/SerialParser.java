@@ -2,11 +2,15 @@ package com.kailas.TelemetryHub.parser;
 
 import com.kailas.TelemetryHub.model.TelemetryData;
 import com.kailas.TelemetryHub.model.TelemetryStatus;
+import org.springframework.stereotype.Component;
+
+
+@Component
 public class SerialParser {
 
-    private TelemetryData parseData(String DataLine){
+    public TelemetryData parseData(String DataLine){
         try{
-        long count = 0;
+        int count = 0;
         int adc = 0;
         int sample_period = 0;
 
@@ -19,7 +23,7 @@ public class SerialParser {
             String data = token[1].trim();
             if(token.length == 2){
                 switch (token[0].trim().toUpperCase()){
-                    case "COUNT" : count = Long.parseLong(data);
+                    case "COUNT" : count = Integer.parseInt(data);
                                     break;
                     case "ADC" : adc = Integer.parseInt(data);
                                     break;
@@ -36,7 +40,7 @@ public class SerialParser {
         return null;
     }
 
-    private TelemetryStatus parseStatus(String StatusLine){
+    public TelemetryStatus parseStatus(String StatusLine){
 
         String[] Token = StatusLine.split("=");
         if(Token.length < 2)return null;
@@ -44,26 +48,22 @@ public class SerialParser {
 
     }
 
-    public void parse(String Line){
-        if(Line == null || !Line.contains(",")){return;}
+    public String[] getActionType(String Line){
+        if(Line == null || !Line.contains(",")){
+            return null;
+        }
 
 
         int IndexOfComma = Line.indexOf(","); //extracts the index of the comma before count
         String Token = Line.substring(0,IndexOfComma);
 
         String[] Type = Token.split("=");
-        if(Type.length <2) return;
+        if(Type.length <2) return null;
 
         String ActionType = Type[1].trim().toUpperCase();
 
         String InfoLine = Line.substring(IndexOfComma+1);   //holds the info after the type is extracted
 
-        switch(ActionType){
-            case "DATA" : parseData(InfoLine);
-                            break;
-            case "STATUS": parseStatus(InfoLine);
-                            break;
-
-        }
+        return new String[]{ActionType,InfoLine};
     }
 }

@@ -1,6 +1,6 @@
 package com.kailas.TelemetryHub.model;
 
-public record TelemetryData(long Count,
+public record TelemetryData(int Count,
                             int AdcValue,
                             int SamplePeriod){
 }

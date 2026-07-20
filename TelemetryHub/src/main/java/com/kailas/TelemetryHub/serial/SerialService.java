@@ -32,8 +32,8 @@ public class SerialService implements CommandLineRunner {
     private int dataBit = 8;
 
     private String password = "ABC"; //hardcoded string in firmware
-    private String startMachineCode = "s"; //hardcoded char in firmware
-    private String stopMachineCode = "p"; //hardcoded char in firmware
+    private String startMachineCode = "s"; //hardcoded chars in firmware
+    private String stopMachineCode = "p";
     private String lockMachineCode = "L";
 
     public synchronized void sendData(String text) throws  Exception{
