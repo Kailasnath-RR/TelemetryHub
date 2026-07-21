@@ -30,6 +30,20 @@ Control the embedded device through REST endpoints:
 
 Commands are transmitted to the microcontroller over UART.
 
+### Serial Port Management
+- Connect to the configured serial port.
+- Disconnect safely by stopping the reader thread and closing the port.
+- Reconnect to the device without restarting the application.
+- Query the current serial connection status.
+
+### REST API
+- REST endpoints for telemetry, machine control, and serial management.
+- Clean layered architecture separating controllers, services, and models.
+
+### Reliability
+- Dedicated UART reader thread.
+- Graceful shutdown of serial communication.
+- Safe reconnection support.
 ---
 
 ## Tech Stack
@@ -58,7 +72,8 @@ Embedded Hardware
                     ▼
         +----------------------+
         | TelemetryController  |
-        | MachineController    |
+        | MachineController    |        
+        | ServiceController    |
         +----------------------+
                     │
                     ▼
@@ -88,7 +103,7 @@ src
  ├── controller
  │     ├── MachineController
  │     └── TelemetryController
- │
+ │ 
  ├── service
  │     ├── MachineService
  │     └── TelemetryService
@@ -110,23 +125,30 @@ src
 
 ### Telemetry
 
-| Method | Endpoint |
-|---------|----------|
-| GET | `/telemetry/latest/data` |
-| GET | `/telemetry/latest/status` |
-| GET | `/telemetry/history` |
+| Method | Endpoint | Description |
+|---------|----------|-------------|
+| GET | `/telemetry/latest/data` | Latest telemetry values |
+| GET | `/telemetry/latest/status` | Latest machine status |
+| GET | `/telemetry/history` | Telemetry history |
 
-### Machine
+### Machine Control
 
-| Method | Endpoint |
-|---------|----------|
-| POST | `/machine/start` |
-| POST | `/machine/stop` |
-| POST | `/machine/unlock` |
-| POST | `/machine/lock` |
-| POST | `/machine/shutdownHardware` |
+| Method | Endpoint | Description |
+|---------|----------|-------------|
+| POST | `/machine/start` | Start machine |
+| POST | `/machine/stop` | Stop machine |
+| POST | `/machine/lock` | Lock machine |
+| POST | `/machine/unlock` | Unlock machine |
+| POST | `/machine/shutdownHardware` | Gracefully shut down hardware |
 
----
+### Serial Communication
+
+| Method | Endpoint | Description |
+|---------|----------|-------------|
+| POST | `/serial/connect` | Open serial connection |
+| POST | `/serial/disconnect` | Safely disconnect serial communication |
+| POST | `/serial/reconnect` | Reconnect to the configured serial port |
+| GET | `/serial/status` | Retrieve current serial connection status |
 
 ## Example Requests
 
@@ -146,15 +168,18 @@ GET /telemetry/latest/data
 
 ## Current Status
 
-Implemented
+### Completed
 
-- UART communication
-- Serial parser
-- Telemetry parsing
-- REST API
-- Machine control endpoints
-- Layered architecture (Controller → Service → Serial)
-
+- Layered Spring Boot architecture
+- UART communication using jSerialComm
+- Serial packet parser
+- Live telemetry acquisition
+- Telemetry history
+- Machine control REST API
+- Serial connection lifecycle management
+- Graceful serial shutdown
+- Safe UART reconnection
+- Connection status endpoint
 Currently Working On
 
 - Proper HTTP response codes
@@ -162,7 +187,7 @@ Currently Working On
 - Exception handling
 - WebSocket telemetry streaming
 
-Planned
+### Planned
 
 - Global exception handling(need to fix exception swallowing)
 - Database persistence

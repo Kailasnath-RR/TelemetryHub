@@ -2,6 +2,7 @@ package com.kailas.TelemetryHub.serial;
 
 
 import com.fazecast.jSerialComm.SerialPort;
+import com.kailas.TelemetryHub.model.SerialStatus;
 import com.kailas.TelemetryHub.service.TelemetryService;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.event.ContextClosedEvent;
@@ -17,14 +18,13 @@ import static java.lang.Boolean.FALSE;
 @Component
 public class SerialService implements CommandLineRunner {
 
-    SerialPort[] portNames = SerialPort.getCommPorts();
     SerialPort comPort = null;
 
-
+    private Thread readerThread = null;
     private BufferedWriter writeData;
     private BufferedReader readData;
     private final TelemetryService telemetryService;
-    private String line;
+    private boolean isConnected = FALSE;
 
     private volatile boolean isRunning = TRUE;
 
@@ -43,13 +43,8 @@ public class SerialService implements CommandLineRunner {
         this.telemetryService = telemetryService;
     }
 
-    private synchronized void sendData(String text) throws  Exception{
-        writeData.write(text);
-        writeData.flush();
-    }
-
     public void unlockMachine() throws Exception{
-            sendData(password);
+        sendData(password);
     }
 
     public void startMachine() throws Exception{
@@ -64,7 +59,83 @@ public class SerialService implements CommandLineRunner {
         sendData(lockMachineCode);
     }
 
+    public void connect(){
+        SerialPort[] portNames = SerialPort.getCommPorts();
+        for(SerialPort port:portNames){
+            if(port.getPortDescription().contains("UART")){
+                comPort = port;
+                break;
+            }
 
+
+        }
+        if(comPort == null) throw new IllegalStateException("UART COM PORT NOT FOUND");
+
+        comPort.setBaudRate(baudRate);
+        comPort.setNumDataBits(dataBit);
+        comPort.setNumStopBits(stopBit);
+        comPort.setParity(SerialPort.NO_PARITY);
+        comPort.setComPortTimeouts(SerialPort.TIMEOUT_READ_SEMI_BLOCKING,readTimeout,writeTimeout);
+        comPort.openPort();
+        if (!comPort.openPort()) {
+            throw new IllegalStateException("Failed to open COM port");
+        }
+            isRunning = TRUE;
+            isConnected = TRUE;
+            OutputStream out = comPort.getOutputStream();
+            writeData = new BufferedWriter(new OutputStreamWriter(out));
+            InputStream in = comPort.getInputStream();
+            readData = new BufferedReader(new InputStreamReader(in));
+
+    }
+    public void disconnect(){
+        shutdownHardware();
+        isRunning = FALSE;
+
+        try{
+            if(readerThread != null){
+                readerThread.join(1000);  //waits for the startReader thread to exit safely
+
+                if(!readerThread.isAlive()){
+                    readerThread = null;
+                }
+            }
+            if(writeData != null){
+                writeData.close();
+            }
+            if(readData != null){
+                readData.close();
+            }
+            if (comPort != null && comPort.isOpen()) {
+                isConnected = FALSE;
+                comPort.closePort();
+                System.out.println("ComPort closed successfully.");
+            }
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+        }
+
+    }
+
+    public void reconnect(){
+        disconnect();
+        connect();
+        startReader();
+    }
+
+    private synchronized void sendData(String text) throws  Exception{
+        writeData.write(text);
+        writeData.flush();
+    }
+
+
+
+    public SerialStatus status(){
+        boolean Lconnected = isConnected;
+        String LportName = comPort.getSystemPortName();
+
+        return new SerialStatus(Lconnected,LportName);
+    }
 
     private synchronized String readUART(){
         try{
@@ -83,7 +154,7 @@ public class SerialService implements CommandLineRunner {
         if (!isRunning) return; // Prevent duplicate cleanup execution
 
         System.out.println("\nInitiating graceful shutdown sequence...");
-        this.isRunning = false;
+
 
         try {
             if (writeData != null) {
@@ -94,79 +165,45 @@ public class SerialService implements CommandLineRunner {
                 System.out.println("Sending LOCK command ('L')...");
                 sendData(lockMachineCode);
                 Thread.sleep(300);
+            }
 
-                writeData.close();
-            }
-            if (readData != null) {
-                readData.close();
-            }
         } catch (Exception e) {
             System.err.println("Teardown error: " + e.getMessage());
-        } finally {
-            if (comPort != null && comPort.isOpen()) {
-                comPort.closePort();
-                System.out.println("ComPort closed successfully.");
-            }
         }
     }
 
-    @EventListener(ContextClosedEvent.class)
-    public void gracefulForcedShutdown(){
-        shutdownHardware();
-    }
+    public void startReader(){
+        if(readerThread != null && readerThread.isAlive()) return;
 
-
-    @Override
-    public void run(String... args) throws Exception {
-
-        if(telemetryService == null) throw new IllegalStateException("Telemetry Service not initialized");
-
-        ;
-        for(SerialPort port:portNames){
-            if(port.getPortDescription().contains("UART")){
-                comPort = port;
-                break;
-            }
-
-        }
-        if(comPort == null) throw new IllegalStateException("UART COM PORT NOT FOUND");
-        comPort.setBaudRate(baudRate);
-        comPort.setNumDataBits(dataBit);
-        comPort.setNumStopBits(stopBit);
-        comPort.setParity(SerialPort.NO_PARITY);
-        comPort.setComPortTimeouts(SerialPort.TIMEOUT_READ_SEMI_BLOCKING,readTimeout,writeTimeout);
-
-
-
-
-        if(comPort.openPort()){
-
-            OutputStream out = comPort.getOutputStream();
-            writeData = new BufferedWriter(new OutputStreamWriter(out));
-            InputStream in = comPort.getInputStream();
-            readData = new BufferedReader(new InputStreamReader(in));
-
+        readerThread = new Thread(()->{
             while(comPort.isOpen() && isRunning){
                 try{
                     if(readData.ready()){
-                        line = readUART();
+                        String line = readUART();
                         telemetryService.parse(line);
 
                     }
                 }
                 catch (Exception e){
-                    System.out.println(e);
+                    System.out.println(e.getMessage());
                 }
-
-
             }
-
-
-
-
-
-
-
-        }
+        });
+        readerThread.start();
     }
+    @EventListener(ContextClosedEvent.class)
+    public void gracefulForcedShutdown(){
+        disconnect();
+    }
+
+
+    @Override
+    public void run(String... args) throws Exception {
+        connect();
+        startReader();
+
+    }
+
 }
+
+
