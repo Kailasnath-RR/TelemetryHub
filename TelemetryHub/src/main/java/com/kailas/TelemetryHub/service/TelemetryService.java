@@ -12,7 +12,7 @@ import java.util.Map;
 @Service
 public class TelemetryService {
 
-    private TelemetryStatus latestStatus;
+    private TelemetryStatus latestStatus;  //holds the current status of the machine
     private TelemetryData latestData;
 
     private Map<Integer,TelemetryData> dataHistory = new HashMap<>();
@@ -20,6 +20,7 @@ public class TelemetryService {
     private final SerialParser serialParser;
 
     public TelemetryService(SerialParser serialParser){
+
         this.serialParser = serialParser;
     }
 
@@ -49,6 +50,20 @@ public class TelemetryService {
                     dataHistory.put(parsedData.Count(), parsedData);
                 }
             }
+    }
+    public TelemetryData getLatestData(){
+        if(latestData == null)  return null;
+        return latestData;
+    }
+
+    public TelemetryStatus getLatestStatus(){
+        if(latestStatus == null) return null;
+        return latestStatus;
+    }
+
+    public Map<Integer, TelemetryData> getHistory(){
+        return dataHistory;
+
     }
 
 }

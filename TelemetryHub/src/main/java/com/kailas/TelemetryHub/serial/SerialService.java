@@ -2,13 +2,13 @@ package com.kailas.TelemetryHub.serial;
 
 
 import com.fazecast.jSerialComm.SerialPort;
+import com.kailas.TelemetryHub.service.TelemetryService;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.event.ContextClosedEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
 import java.io.*;
-import java.util.Scanner;
 
 import static java.lang.Boolean.TRUE;
 import static java.lang.Boolean.FALSE;
@@ -16,11 +16,14 @@ import static java.lang.Boolean.FALSE;
 
 @Component
 public class SerialService implements CommandLineRunner {
-    SerialPort comPort = SerialPort.getCommPort("COM19");
+
+    SerialPort[] portNames = SerialPort.getCommPorts();
+    SerialPort comPort = null;
+
 
     private BufferedWriter writeData;
     private BufferedReader readData;
-
+    private final TelemetryService telemetryService;
     private String line;
 
     private volatile boolean isRunning = TRUE;
@@ -36,7 +39,11 @@ public class SerialService implements CommandLineRunner {
     private String stopMachineCode = "p";
     private String lockMachineCode = "L";
 
-    public synchronized void sendData(String text) throws  Exception{
+    public SerialService(TelemetryService telemetryService){
+        this.telemetryService = telemetryService;
+    }
+
+    private synchronized void sendData(String text) throws  Exception{
         writeData.write(text);
         writeData.flush();
     }
@@ -53,21 +60,23 @@ public class SerialService implements CommandLineRunner {
         sendData(stopMachineCode);
     }
 
+    public void lockMachine() throws Exception{
+        sendData(lockMachineCode);
+    }
 
 
-    public synchronized void readUART(){
+
+    private synchronized String readUART(){
         try{
             if (readData != null) {
-                line = readData.readLine();
-                if (line != null && !line.trim().isEmpty()) {
-                    System.out.println("Recieved: " + line);
-                }
+                return readData.readLine();
             }
         }catch(IOException e){
             if(isRunning && !e.getMessage().contains("timed out")){
                 System.err.println("Actual UART error: "+e.getMessage());
             }
         }
+        return null;
     }
 
     public synchronized void shutdownHardware() {
@@ -106,39 +115,27 @@ public class SerialService implements CommandLineRunner {
         shutdownHardware();
     }
 
-    private void startConsoleListener() {
-        Thread consoleThread = new Thread(() -> {
-            Scanner scanner = new Scanner(System.in);
-            System.out.println("=== Telemetry Active. Type 'quit' or 'exit' anytime to stop. ===");
-
-            while (isRunning) {
-                if (scanner.hasNextLine()) {
-                    String input = scanner.nextLine().trim();
-                    if ("quit".equalsIgnoreCase(input) || "exit".equalsIgnoreCase(input)) {
-                        shutdownHardware();
-                        // Exit application cleanly
-                        System.exit(0);
-                    } else if ("stop".equalsIgnoreCase(input)) {
-                        try { stopMachine(); } catch (Exception e) { System.err.println(e.getMessage()); }
-                    } else if ("start".equalsIgnoreCase(input)) {
-                        try { startMachine(); } catch (Exception e) { System.err.println(e.getMessage()); }
-                    }else if ("unlock".equalsIgnoreCase(input)){
-                        try { unlockMachine();} catch (Exception e) { System.err.println(e.getMessage()); }
-                    }
-                }
-            }
-        });
-        consoleThread.setDaemon(true);
-        consoleThread.start();
-    }
 
     @Override
     public void run(String... args) throws Exception {
+
+        if(telemetryService == null) throw new IllegalStateException("Telemetry Service not initialized");
+
+        ;
+        for(SerialPort port:portNames){
+            if(port.getPortDescription().contains("UART")){
+                comPort = port;
+                break;
+            }
+
+        }
+        if(comPort == null) throw new IllegalStateException("UART COM PORT NOT FOUND");
         comPort.setBaudRate(baudRate);
         comPort.setNumDataBits(dataBit);
         comPort.setNumStopBits(stopBit);
         comPort.setParity(SerialPort.NO_PARITY);
         comPort.setComPortTimeouts(SerialPort.TIMEOUT_READ_SEMI_BLOCKING,readTimeout,writeTimeout);
+
 
 
 
@@ -149,12 +146,12 @@ public class SerialService implements CommandLineRunner {
             InputStream in = comPort.getInputStream();
             readData = new BufferedReader(new InputStreamReader(in));
 
-            startConsoleListener();
-
             while(comPort.isOpen() && isRunning){
                 try{
                     if(readData.ready()){
-                        readUART();
+                        line = readUART();
+                        telemetryService.parse(line);
+
                     }
                 }
                 catch (Exception e){
