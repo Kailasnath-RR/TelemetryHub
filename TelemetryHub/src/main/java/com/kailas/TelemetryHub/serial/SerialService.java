@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory;
 import com.fazecast.jSerialComm.SerialPort;
 import com.kailas.TelemetryHub.model.SerialStatus;
 import com.kailas.TelemetryHub.service.TelemetryService;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.event.ContextClosedEvent;
 import org.springframework.context.event.EventListener;
@@ -34,11 +35,20 @@ public class SerialService implements CommandLineRunner {
     private boolean isConnected = FALSE;
     private volatile boolean isRunning = TRUE;
 
-    private int writeTimeout = 1000;
-    private int readTimeout = 3000;  //assuming data flows in every 3s
-    private int baudRate = 9600;
-    private int stopBit = 1;
-    private int dataBit = 8;
+    @Value("${serial.write-timeout}")
+    private int writeTimeout ;
+
+    @Value("${serial.read-timeout}")
+    private int readTimeout ; //assumes data flows in every 3 seconds
+
+    @Value("${serial.baud-rate}")
+    private int baudRate ;
+
+    @Value("${serial.stop-bit}")
+    private int stopBit ;
+
+    @Value("${serial.data-bit}")
+    private int dataBit;
 
     private final String password = "ABC"; //hardcoded string in firmware
     private final String startMachineCode = "s"; //hardcoded chars in firmware
