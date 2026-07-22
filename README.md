@@ -187,9 +187,20 @@ Currently Working On
 - Exception handling
 - WebSocket telemetry streaming
 
+### Machine State
+`(Global Exception Handler used here)`
+
+The backend maintains machine state to prevent invalid commands such as:
+
+- Starting an already running machine
+- Unlocking an already unlocked machine
+- Locking an already locked machine
+- Stopping an already stopped machine
+
+The state is reset after a reconnect since the disconnect sequence always stops and locks the hardware.
+
 ### Planned
 
-- Global exception handling(need to fix exception swallowing)
 - Database persistence
 - Authentication
 - Frontend dashboard

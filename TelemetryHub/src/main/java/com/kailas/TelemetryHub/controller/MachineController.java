@@ -2,6 +2,7 @@ package com.kailas.TelemetryHub.controller;
 
 
 import com.kailas.TelemetryHub.service.MachineService;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -18,29 +19,36 @@ public class MachineController {
     }
 
     @PostMapping("/start")
-    public void startMachine(){
+    public ResponseEntity<Void> startMachine(){
             machineService.startMachine();
+            return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/stop")
-    public void stopMachine(){
+    public ResponseEntity<Void> stopMachine(){
             machineService.stopMachine();
-
+            return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/unlock")
-    public void unlockMachine(){
+    public ResponseEntity<Void> unlockMachine(){
             machineService.unlockMachine();
+            return ResponseEntity.noContent().build();
+
         }
 
     @PostMapping("/lock")
-    public void lockMachine(){
-            machineService.lockMachine();
+    public ResponseEntity<Void> lockMachine(){
+
+        machineService.lockMachine();
+        return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/shutdownHardware")
-    public void shutdownHardware(){
-            machineService.shutdownMachine();
+    public ResponseEntity<Void> shutdownHardware(){
+
+        machineService.shutdownMachine();
+        return ResponseEntity.noContent().build();
     }
 
 }

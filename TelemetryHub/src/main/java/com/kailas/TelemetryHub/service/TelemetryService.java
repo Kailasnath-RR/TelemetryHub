@@ -3,15 +3,18 @@ package com.kailas.TelemetryHub.service;
 import com.kailas.TelemetryHub.model.TelemetryData;
 import com.kailas.TelemetryHub.model.TelemetryStatus;
 import com.kailas.TelemetryHub.parser.SerialParser;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 
 import java.util.HashMap;
 import java.util.Map;
+import org.slf4j.Logger;
 
 @Service
 public class TelemetryService {
 
+    private static Logger logger = LoggerFactory.getLogger(TelemetryService.class);
     private TelemetryStatus latestStatus;  //holds the current status of the machine
     private TelemetryData latestData;
 

@@ -4,6 +4,7 @@ package com.kailas.TelemetryHub.controller;
 import com.kailas.TelemetryHub.model.TelemetryData;
 import com.kailas.TelemetryHub.model.TelemetryStatus;
 import com.kailas.TelemetryHub.service.TelemetryService;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -21,19 +22,23 @@ public class TelemetryController {
     }
 
     @GetMapping("/latest/data")
-    public TelemetryData getLatestData(){
-       return telemetryService.getLatestData();
+    public ResponseEntity<TelemetryData> getLatestData(){
+        TelemetryData t = telemetryService.getLatestData();
+        return ResponseEntity.ok(t);
     }
 
 
     @GetMapping("/latest/status")
-    public TelemetryStatus getLatestStatus(){
-        return telemetryService.getLatestStatus();
+    public ResponseEntity<TelemetryStatus> getLatestStatus(){
+        TelemetryStatus t = telemetryService.getLatestStatus();
+        return  ResponseEntity.ok(t);
     }
 
     @GetMapping("/history")
-    public Map<Integer, TelemetryData> getHistory(){
-        return telemetryService.getHistory();
+    public ResponseEntity<Map<Integer, TelemetryData>> getHistory(){
+
+        Map<Integer, TelemetryData> t = telemetryService.getHistory();
+        return  ResponseEntity.ok(t);
     }
 
 

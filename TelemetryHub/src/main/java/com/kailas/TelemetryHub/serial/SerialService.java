@@ -1,6 +1,9 @@
 package com.kailas.TelemetryHub.serial;
 
-
+import com.kailas.TelemetryHub.exception.SerialCommunicationException;
+import com.kailas.TelemetryHub.service.MachineService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import com.fazecast.jSerialComm.SerialPort;
 import com.kailas.TelemetryHub.model.SerialStatus;
 import com.kailas.TelemetryHub.service.TelemetryService;
@@ -20,12 +23,15 @@ public class SerialService implements CommandLineRunner {
 
     SerialPort comPort = null;
 
+    private static final Logger logger = LoggerFactory.getLogger(SerialService.class);
+
     private Thread readerThread = null;
     private BufferedWriter writeData;
     private BufferedReader readData;
-    private final TelemetryService telemetryService;
-    private boolean isConnected = FALSE;
 
+    private final TelemetryService telemetryService;
+
+    private boolean isConnected = FALSE;
     private volatile boolean isRunning = TRUE;
 
     private int writeTimeout = 1000;
@@ -34,28 +40,28 @@ public class SerialService implements CommandLineRunner {
     private int stopBit = 1;
     private int dataBit = 8;
 
-    private String password = "ABC"; //hardcoded string in firmware
-    private String startMachineCode = "s"; //hardcoded chars in firmware
-    private String stopMachineCode = "p";
-    private String lockMachineCode = "L";
+    private final String password = "ABC"; //hardcoded string in firmware
+    private final String startMachineCode = "s"; //hardcoded chars in firmware
+    private final String stopMachineCode = "p";
+    private final String lockMachineCode = "L";
 
     public SerialService(TelemetryService telemetryService){
         this.telemetryService = telemetryService;
     }
 
-    public void unlockMachine() throws Exception{
+    public void unlockMachine() {
         sendData(password);
     }
 
-    public void startMachine() throws Exception{
+    public void startMachine() {
         sendData(startMachineCode);
     }
 
-    public void stopMachine() throws Exception{
+    public void stopMachine() {
         sendData(stopMachineCode);
     }
 
-    public void lockMachine() throws Exception{
+    public void lockMachine() {
         sendData(lockMachineCode);
     }
 
@@ -80,6 +86,7 @@ public class SerialService implements CommandLineRunner {
         if (!comPort.openPort()) {
             throw new IllegalStateException("Failed to open COM port");
         }
+            logger.info("Connected to {}",comPort.getSystemPortName());
             isRunning = TRUE;
             isConnected = TRUE;
             OutputStream out = comPort.getOutputStream();
@@ -90,9 +97,11 @@ public class SerialService implements CommandLineRunner {
     }
     public void disconnect(){
         shutdownHardware();
-        isRunning = FALSE;
 
         try{
+
+            Thread.sleep(500);
+            isRunning = FALSE;
             if(readerThread != null){
                 readerThread.join(1000);  //waits for the startReader thread to exit safely
 
@@ -109,10 +118,10 @@ public class SerialService implements CommandLineRunner {
             if (comPort != null && comPort.isOpen()) {
                 isConnected = FALSE;
                 comPort.closePort();
-                System.out.println("ComPort closed successfully.");
+                logger.info("Disconnected from {}",comPort.getSystemPortName());
             }
         } catch (Exception e) {
-            System.out.println(e.getMessage());
+            logger.error("Disconnect failed: ",e);
         }
 
     }
@@ -123,16 +132,26 @@ public class SerialService implements CommandLineRunner {
         startReader();
     }
 
-    private synchronized void sendData(String text) throws  Exception{
-        writeData.write(text);
-        writeData.flush();
+    private synchronized void sendData(String text) {
+        try{
+            writeData.write(text);
+            writeData.flush();
+        } catch (IOException e) {
+            logger.error("Failed to send UART communication ",e);
+            throw new SerialCommunicationException(e);
+        }
     }
 
 
 
     public SerialStatus status(){
         boolean Lconnected = isConnected;
-        String LportName = comPort.getSystemPortName();
+        String LportName;
+        if(comPort!=null){
+            LportName = comPort.getSystemPortName();
+        }else{
+            LportName = "none";
+        }
 
         return new SerialStatus(Lconnected,LportName);
     }
@@ -140,11 +159,12 @@ public class SerialService implements CommandLineRunner {
     private synchronized String readUART(){
         try{
             if (readData != null) {
+
                 return readData.readLine();
             }
         }catch(IOException e){
             if(isRunning && !e.getMessage().contains("timed out")){
-                System.err.println("Actual UART error: "+e.getMessage());
+                logger.error("Actual UART error: ",e);
             }
         }
         return null;
@@ -152,23 +172,21 @@ public class SerialService implements CommandLineRunner {
 
     public synchronized void shutdownHardware() {
         if (!isRunning) return; // Prevent duplicate cleanup execution
-
-        System.out.println("\nInitiating graceful shutdown sequence...");
-
+        logger.info("Initiating graceful shutdown sequence...");
 
         try {
             if (writeData != null) {
-                System.out.println("Sending STOP command ('p')...");
+                logger.info("Sending STOP command ('p')...");
                 sendData(stopMachineCode);
                 Thread.sleep(300); // MCU needs execution time to pause telemetry
 
-                System.out.println("Sending LOCK command ('L')...");
+                logger.info("Sending LOCK command ('L')...");
                 sendData(lockMachineCode);
                 Thread.sleep(300);
             }
 
         } catch (Exception e) {
-            System.err.println("Teardown error: " + e.getMessage());
+                logger.error("Teardown error: ",e);
         }
     }
 
@@ -178,6 +196,7 @@ public class SerialService implements CommandLineRunner {
         readerThread = new Thread(()->{
             while(comPort.isOpen() && isRunning){
                 try{
+
                     if(readData.ready()){
                         String line = readUART();
                         telemetryService.parse(line);
@@ -185,20 +204,23 @@ public class SerialService implements CommandLineRunner {
                     }
                 }
                 catch (Exception e){
-                    System.out.println(e.getMessage());
+                    logger.error("Reader Thread Failed: ",e);
                 }
             }
-        });
+            logger.info("Reader Thread Stopped.");
+        },"UART Reader Thread");
         readerThread.start();
+        logger.info("Reader Thread started");
     }
+
     @EventListener(ContextClosedEvent.class)
     public void gracefulForcedShutdown(){
+
         disconnect();
     }
 
-
     @Override
-    public void run(String... args) throws Exception {
+    public void run(String... args){
         connect();
         startReader();
 
