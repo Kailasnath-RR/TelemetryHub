@@ -133,15 +133,15 @@ src
 
 ### Machine Control
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST   | `/machine/start` | Start machine |
-| POST   | `/machine/stop` | Stop machine |
-| POST   | `/machine/lock` | Lock machine |
-| POST   | `/machine/unlock` | Unlock machine |
+| Method | Endpoint                  | Description |
+|--------|---------------------------|-------------|
+| POST   | `/machine/start`          | Start machine |
+| POST   | `/machine/stop`           | Stop machine |
+| POST   | `/machine/lock`           | Lock machine |
+| POST   | `/machine/unlock`         | Unlock machine |
 | POST   | `/machine/shutdownHardware` | Gracefully shut down hardware | 
 | POST   | `/machine/speed-increase` |Increase sampling rate|
-| POST   | `/machine/decrease-increase`|Decrease sampling rate|
+| POST   | `/machine/speed-decrease` |Decrease sampling rate|
 ### Serial Communication
 
 | Method | Endpoint | Description |
