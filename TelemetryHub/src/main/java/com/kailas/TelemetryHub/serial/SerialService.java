@@ -54,6 +54,8 @@ public class SerialService implements CommandLineRunner {
     private final String startMachineCode = "s"; //hardcoded chars in firmware
     private final String stopMachineCode = "p";
     private final String lockMachineCode = "L";
+    private final String speedIncreaseCode = "+";
+    private final String speedDecreaseCode = "-";
 
     public SerialService(TelemetryService telemetryService){
         this.telemetryService = telemetryService;
@@ -74,6 +76,11 @@ public class SerialService implements CommandLineRunner {
     public void lockMachine() {
         sendData(lockMachineCode);
     }
+
+    public void machineSpeedIncrease(){sendData(speedIncreaseCode);}
+
+    public void machineSpeedDecrease(){sendData(speedDecreaseCode);}
+
 
     public void connect(){
         SerialPort[] portNames = SerialPort.getCommPorts();
@@ -225,7 +232,12 @@ public class SerialService implements CommandLineRunner {
 
     @EventListener(ContextClosedEvent.class)
     public void gracefulForcedShutdown(){
-
+        try {
+            shutdownHardware();
+        }
+        catch (Exception e) {
+            logger.warn("Unable to notify hardware during shutdown", e);
+        }
         disconnect();
     }
 

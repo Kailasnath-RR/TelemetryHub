@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -35,9 +36,9 @@ public class TelemetryController {
     }
 
     @GetMapping("/history")
-    public ResponseEntity<Map<Integer, TelemetryData>> getHistory(){
+    public ResponseEntity<List<TelemetryData>> getHistory(){
 
-        Map<Integer, TelemetryData> t = telemetryService.getHistory();
+        List<TelemetryData> t = telemetryService.getHistory();
         return  ResponseEntity.ok(t);
     }
 

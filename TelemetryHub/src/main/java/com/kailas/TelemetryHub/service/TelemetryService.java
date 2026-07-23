@@ -1,29 +1,38 @@
 package com.kailas.TelemetryHub.service;
 
+import com.kailas.TelemetryHub.entities.TelemetryEntity;
+import com.kailas.TelemetryHub.mapper.TelemetryMapper;
 import com.kailas.TelemetryHub.model.TelemetryData;
 import com.kailas.TelemetryHub.model.TelemetryStatus;
 import com.kailas.TelemetryHub.parser.SerialParser;
-import org.slf4j.LoggerFactory;
+
+import com.kailas.TelemetryHub.repository.TelemetryRepository;
 import org.springframework.stereotype.Service;
 
 
-import java.util.HashMap;
-import java.util.Map;
-import org.slf4j.Logger;
+import java.util.List;
+
+
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 
 @Service
 public class TelemetryService {
 
-    private static Logger logger = LoggerFactory.getLogger(TelemetryService.class);
+
     private TelemetryStatus latestStatus;  //holds the current status of the machine
     private TelemetryData latestData;
 
-    private Map<Integer,TelemetryData> dataHistory = new HashMap<>();
+
 
     private final SerialParser serialParser;
+    private final SimpMessagingTemplate simpMessagingTemplate;
+    private final TelemetryRepository telemetryRepository;
+    private final TelemetryMapper telemetryMapper;
 
-    public TelemetryService(SerialParser serialParser){
-
+    public TelemetryService(SerialParser serialParser,SimpMessagingTemplate simpMessagingTemplate,TelemetryRepository telemetryRepository,TelemetryMapper telemetryMapper){
+        this.telemetryMapper = telemetryMapper;
+        this.telemetryRepository = telemetryRepository;
+        this.simpMessagingTemplate = simpMessagingTemplate;
         this.serialParser = serialParser;
     }
 
@@ -42,6 +51,7 @@ public class TelemetryService {
 
                 if (parsedStatus != null) {
                     latestStatus = parsedStatus;
+                    simpMessagingTemplate.convertAndSend("/topic/status",latestStatus);
                 }
 
             }
@@ -50,7 +60,10 @@ public class TelemetryService {
 
                 if (parsedData != null) {
                     latestData = parsedData;
-                    dataHistory.put(parsedData.Count(), parsedData);
+                    TelemetryEntity entity = telemetryMapper.toTelemetryEntity(latestData);
+                    telemetryRepository.save(entity);
+                    simpMessagingTemplate.convertAndSend("/topic/telemetry",latestData);
+
                 }
             }
     }
@@ -64,8 +77,8 @@ public class TelemetryService {
         return latestStatus;
     }
 
-    public Map<Integer, TelemetryData> getHistory(){
-        return dataHistory;
+    public List<TelemetryData> getHistory(){
+        return telemetryMapper.toTelemetryDto(telemetryRepository.findAll());
 
     }
 

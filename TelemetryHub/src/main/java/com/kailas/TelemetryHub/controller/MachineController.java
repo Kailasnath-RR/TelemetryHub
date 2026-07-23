@@ -51,4 +51,17 @@ public class MachineController {
         return ResponseEntity.noContent().build();
     }
 
+    @PostMapping("/speed-increase")
+    public ResponseEntity<Void> speedInc(){
+        machineService.machineSpeedIncrease();
+        return ResponseEntity.noContent().build();
+
+    }
+
+    @PostMapping("/speed-decrease")
+    public ResponseEntity<Void> speedDec(){
+        machineService.machineSpeedDecrease();
+        return ResponseEntity.noContent().build();
+
+    }
 }

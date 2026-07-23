@@ -1,8 +1,15 @@
 package com.kailas.TelemetryHub.model;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+
+import java.time.LocalDateTime;
+
 public record TelemetryData(int Count,
                             int AdcValue,
-                            int SamplePeriod){
+                            int SamplePeriod,
+
+                            @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss.SSS")
+                            LocalDateTime receivedAt){
 }
 
 

@@ -3,11 +3,14 @@ package com.kailas.TelemetryHub.parser;
 import com.kailas.TelemetryHub.model.TelemetryData;
 import com.kailas.TelemetryHub.model.TelemetryStatus;
 import org.springframework.stereotype.Component;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import java.time.LocalDateTime;
 
 
 @Component
 public class SerialParser {
-
+    private static final Logger logger = LoggerFactory.getLogger(SerialParser.class);
     public TelemetryData parseData(String DataLine){
         try{
         int count = 0;
@@ -33,9 +36,9 @@ public class SerialParser {
                 }
             }
         }
-        return new TelemetryData(count,adc,sample_period);
+        return new TelemetryData(count,adc,sample_period, LocalDateTime.now());
         }catch (NumberFormatException e){
-            System.out.println(e.getMessage());
+            logger.warn("Failed to parse telemetry packet: {}", DataLine, e);
         }
         return null;
     }
@@ -44,7 +47,7 @@ public class SerialParser {
 
         String[] Token = StatusLine.split("=");
         if(Token.length < 2)return null;
-        return new TelemetryStatus(Token[1].trim());
+        return new TelemetryStatus(Token[1].trim(),LocalDateTime.now());
 
     }
 

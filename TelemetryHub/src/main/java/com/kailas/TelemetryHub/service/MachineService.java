@@ -19,6 +19,7 @@ public class MachineService {
     private final SerialService serialService;
     private static final Logger logger = LoggerFactory.getLogger(MachineService.class);
 
+    private int PR3 = 10000;
     private boolean isLocked = TRUE;
     private boolean isRunning = FALSE;
 
@@ -38,6 +39,7 @@ public class MachineService {
     public void resetMachineState() {
         isRunning = FALSE;
         isLocked = TRUE;
+
     }
 
     public void startMachine(){
@@ -104,6 +106,24 @@ public class MachineService {
         serialService.shutdownHardware();
         isRunning = FALSE;
         isLocked = TRUE;
+    }
+
+    public void machineSpeedIncrease(){
+        if(PR3 < 4000){
+            PR3 = 10000;
+            logger.warn("Machine speed below 4000, looping back to 10000"); //syncing it to match the firmware implementation
+            throw new MachineTooFastException();
+        }
+
+        serialService.machineSpeedIncrease();
+        PR3 -= 2000;
+        logger.info("Machine speed increased");
+    }
+
+    public void machineSpeedDecrease(){
+        serialService.machineSpeedDecrease();
+        PR3 += 2000;
+        logger.info("Machine speed decreased");
     }
 
 

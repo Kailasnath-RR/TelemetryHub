@@ -134,13 +134,14 @@ src
 ### Machine Control
 
 | Method | Endpoint | Description |
-|---------|----------|-------------|
-| POST | `/machine/start` | Start machine |
-| POST | `/machine/stop` | Stop machine |
-| POST | `/machine/lock` | Lock machine |
-| POST | `/machine/unlock` | Unlock machine |
-| POST | `/machine/shutdownHardware` | Gracefully shut down hardware |
-
+|--------|----------|-------------|
+| POST   | `/machine/start` | Start machine |
+| POST   | `/machine/stop` | Stop machine |
+| POST   | `/machine/lock` | Lock machine |
+| POST   | `/machine/unlock` | Unlock machine |
+| POST   | `/machine/shutdownHardware` | Gracefully shut down hardware | 
+| POST   | `/machine/speed-increase` |Increase sampling rate|
+| POST   | `/machine/decrease-increase`|Decrease sampling rate|
 ### Serial Communication
 
 | Method | Endpoint | Description |
@@ -166,26 +167,21 @@ GET /telemetry/latest/data
 
 ---
 
-## Current Status
+## Current Capabilities
 
-### Completed
+✔ Connect to dsPIC over UART
 
-- Layered Spring Boot architecture
-- UART communication using jSerialComm
-- Serial packet parser
-- Live telemetry acquisition
-- Telemetry history
-- Machine control REST API
-- Serial connection lifecycle management
-- Graceful serial shutdown
-- Safe UART reconnection
-- Connection status endpoint
-Currently Working On
+✔ Send machine control commands
 
-- Proper HTTP response codes
-- Logging
-- Exception handling
-- WebSocket telemetry streaming
+✔ Adjust machine sampling speed
+
+✔ Receive and parse telemetry packets
+
+✔ Broadcast live telemetry over WebSockets
+
+✔ Persist telemetry history to a database
+
+✔ Retrieve telemetry history through REST endpoints
 
 ### Machine State
 `(Global Exception Handler used here)`
@@ -199,15 +195,24 @@ The backend maintains machine state to prevent invalid commands such as:
 
 The state is reset after a reconnect since the disconnect sequence always stops and locks the hardware.
 
+## Database
+
+Telemetry packets are automatically persisted using Spring Data JPA.
+
+Current database:
+- H2 (In-Memory)
+
+Future migration:
+- PostgreSQL
 ### Planned
 
-- Database persistence
+- Database persistence(PostgreSQL otw)
 - Authentication
 - Frontend dashboard
 - Docker deployment
 - Machine state management
 - API documentation (OpenAPI / Swagger)
-
+- better state persistence and sync with the MCU 
 ---
 
 ## Learning Goals
@@ -215,6 +220,7 @@ The state is reset after a reconnect since the disconnect sequence always stops 
 This project is being built to gain practical experience with:
 
 - Spring Boot
+- Spring Data JPA
 - REST APIs
 - Backend Architecture
 - Embedded Systems
