@@ -50,4 +50,9 @@ public class TelemetryController {
         return  ResponseEntity.ok(telemetryService.getHistory(adcMin,adcMax,pageable));
     }
 
+    @GetMapping("/voltage")
+    public ResponseEntity<List<Double>> getVoltage(){
+            return ResponseEntity.ok(telemetryService.getVoltage());
+    }
+
 }

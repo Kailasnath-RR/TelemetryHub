@@ -15,6 +15,9 @@ import org.springframework.stereotype.Service;
 
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Service
 public class TelemetryService {
 
@@ -97,6 +100,15 @@ public class TelemetryService {
             return telemetryMapper.toPageResponse(pageData);
         }
         return null;
+    }
+
+    public List<Double> getVoltage(){
+        List<TelemetryEntity> data = telemetryRepository.findAll();
+        List<Double> voltageData = new ArrayList<>();
+        for(TelemetryEntity entity:data){
+            voltageData.add((entity.getAdcValue()*3.3)/1023);
+        }
+        return voltageData;
     }
 
 }
