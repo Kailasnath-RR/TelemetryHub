@@ -12,10 +12,9 @@ This project is part of my embedded systems and backend engineering learning jou
 
 ### Telemetry
 
-- Receive UART telemetry packets
-- Parse incoming STATUS and DATA packets
-- Store the latest telemetry values
 - Maintain telemetry history
+- Paginated telemetry history retrieval
+- ADC value filtering
 - Expose telemetry through REST APIs
 
 ### Machine Control
@@ -125,12 +124,13 @@ src
 
 ### Telemetry
 
-| Method | Endpoint | Description |
-|---------|----------|-------------|
-| GET | `/telemetry/latest/data` | Latest telemetry values |
-| GET | `/telemetry/latest/status` | Latest machine status |
-| GET | `/telemetry/history` | Telemetry history |
-
+| Method | Endpoint                                   | Description                      |
+|--------|--------------------------------------------|----------------------------------|
+| GET    | `/telemetry/latest/data`                   | Latest telemetry values          |
+| GET    | `/telemetry/latest/status`                 | Latest machine status            |
+| GET    | `/telemetry/history`                       | Paginated telemetry history      |
+| GET    | `/telemetry/history?adcMin=112`            | FIlter by greater than adc value | 
+| GET    | `/telemetry/history?adcMin=100&adcMax=500` | Filter adc value by range        |
 ### Machine Control
 
 | Method | Endpoint                  | Description |
@@ -183,6 +183,12 @@ GET /telemetry/latest/data
 
 ✔ Retrieve telemetry history through REST endpoints
 
+✔ Pagination support
+
+✔ Telemetry filtering using Spring Data derived query methods
+
+✔ DTO based paginated API responses
+
 ### Machine State
 `(Global Exception Handler used here)`
 
@@ -206,7 +212,7 @@ Future migration:
 - PostgreSQL
 ### Planned
 
-- Database persistence(PostgreSQL otw)
+- Database (PostgreSQL otw)
 - Authentication
 - Frontend dashboard
 - Docker deployment
@@ -221,11 +227,14 @@ This project is being built to gain practical experience with:
 
 - Spring Boot
 - Spring Data JPA
+- Pagination
+- Filtering
+- Repository Pattern
+- DTO Mapping
 - REST APIs
 - Backend Architecture
 - Embedded Systems
 - UART Communication
-- Java
 - Layered Application Design
 - Software Engineering Best Practices
 

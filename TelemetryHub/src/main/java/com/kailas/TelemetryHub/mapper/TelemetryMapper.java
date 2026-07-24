@@ -1,7 +1,9 @@
 package com.kailas.TelemetryHub.mapper;
 
 import com.kailas.TelemetryHub.entities.TelemetryEntity;
+import com.kailas.TelemetryHub.model.PageResponse;
 import com.kailas.TelemetryHub.model.TelemetryData;
+import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -21,17 +23,24 @@ public class TelemetryMapper {
                         .receivedAt(dto.receivedAt()).build();
     }
 
-    public List<TelemetryData> toTelemetryDto(List<TelemetryEntity> entityList){
 
-        if(entityList ==null) return List.of();
+    public TelemetryData toTelemetryDto(TelemetryEntity entity) {
 
-        List<TelemetryData> data = new ArrayList<>();
-
-        for(TelemetryEntity entity:entityList){
-            TelemetryData dto = new TelemetryData(entity.getCount(),entity.getAdcValue(),entity.getSamplePeriod(),entity.getReceivedAt());
-            data.add(dto);
-        }
-
-        return data;
+        return new TelemetryData(
+                entity.getCount(),
+                entity.getAdcValue(),
+                entity.getSamplePeriod(),
+                entity.getReceivedAt()
+        );
+    }
+    public PageResponse<TelemetryData> toPageResponse(Page<TelemetryData> page){
+        return new PageResponse<>(
+                page.getContent(),
+                page.getNumber(),
+                page.getSize(),
+                page.getTotalPages(),
+                page.getTotalElements(),
+                page.hasNext(),
+                page.hasPrevious());
     }
 }

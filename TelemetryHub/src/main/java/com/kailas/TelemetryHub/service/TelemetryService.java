@@ -2,15 +2,15 @@ package com.kailas.TelemetryHub.service;
 
 import com.kailas.TelemetryHub.entities.TelemetryEntity;
 import com.kailas.TelemetryHub.mapper.TelemetryMapper;
+import com.kailas.TelemetryHub.model.PageResponse;
 import com.kailas.TelemetryHub.model.TelemetryData;
 import com.kailas.TelemetryHub.model.TelemetryStatus;
 import com.kailas.TelemetryHub.parser.SerialParser;
-
 import com.kailas.TelemetryHub.repository.TelemetryRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
-
-import java.util.List;
 
 
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -18,11 +18,8 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 @Service
 public class TelemetryService {
 
-
     private TelemetryStatus latestStatus;  //holds the current status of the machine
     private TelemetryData latestData;
-
-
 
     private final SerialParser serialParser;
     private final SimpMessagingTemplate simpMessagingTemplate;
@@ -77,9 +74,29 @@ public class TelemetryService {
         return latestStatus;
     }
 
-    public List<TelemetryData> getHistory(){
-        return telemetryMapper.toTelemetryDto(telemetryRepository.findAll());
+    public PageResponse<TelemetryData> getHistory(Integer adcMin,Integer adcMax,Pageable pageable){
 
+        if(adcMin == null && adcMax == null)
+        {
+        Page<TelemetryData> pageData =
+                telemetryRepository.findAll(pageable)
+                .map(telemetryMapper::toTelemetryDto);
+
+        return telemetryMapper.toPageResponse(pageData);
+        }else if(adcMax == null){
+            Page<TelemetryData> pageData = telemetryRepository
+                    .findByadcValueGreaterThan(adcMin,pageable)
+                    .map(telemetryMapper::toTelemetryDto);
+
+            return telemetryMapper.toPageResponse(pageData);
+        }
+        else if(adcMin != null && adcMax !=null){
+            Page<TelemetryData> pageData = telemetryRepository
+                    .findByadcValueBetween(adcMin,adcMax,pageable)
+                    .map(telemetryMapper::toTelemetryDto);
+            return telemetryMapper.toPageResponse(pageData);
+        }
+        return null;
     }
 
 }
