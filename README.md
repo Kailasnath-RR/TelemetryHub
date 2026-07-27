@@ -131,6 +131,7 @@ src
 | GET    | `/telemetry/history`                       | Paginated telemetry history      |
 | GET    | `/telemetry/history?adcMin=112`            | FIlter by greater than adc value | 
 | GET    | `/telemetry/history?adcMin=100&adcMax=500` | Filter adc value by range        |
+| GET    | `/telemetry/stats`                         | Gets stats related to values, can apply `from` & `to` filters for timestamp based filtering and `adcMin` and `adcMax` filters for adc values based filtering|
 ### Machine Control
 
 | Method | Endpoint                  | Description |
@@ -210,6 +211,28 @@ Current database:
 
 Future migration:
 - PostgreSQL
+
+### Database Design
+
+### Telemetry
+
+| Column | Description |
+|---------|-------------|
+| id | Primary Key |
+| count | Packet counter |
+| adcValue | ADC reading |
+| samplePeriod | Sampling interval |
+| receivedAt | Timestamp |
+
+### TelemetryAlert
+
+| Column | Description |
+|---------|-------------|
+| id | Primary Key |
+| telemetry_id | Foreign key to Telemetry |
+| createdAt | Alert timestamp |
+| message | Alert message |
+
 ### Planned
 
 - Database (PostgreSQL otw)
@@ -225,18 +248,21 @@ Future migration:
 
 This project is being built to gain practical experience with:
 
-- Spring Boot
-- Spring Data JPA
-- Pagination
-- Filtering
-- Repository Pattern
+- Spring boot
+- REST API Design
 - DTO Mapping
-- REST APIs
-- Backend Architecture
-- Embedded Systems
-- UART Communication
-- Layered Application Design
-- Software Engineering Best Practices
+- Records
+- Pagination
+- JPQL
+- Constructor Projections
+- Aggregate Queries
+- Optional Query Filters
+- WebSockets
+- Serial Communication
+- Entity Relationships
+- Many-to-One Mapping
+- Repository Pattern
+- Service Layer Architecture
 
 ---
 ## Related Projects
