@@ -50,12 +50,23 @@ public class SerialService implements CommandLineRunner {
     @Value("${serial.data-bit}")
     private int dataBit;
 
-    private final String password = "ABC"; //hardcoded string in firmware
-    private final String startMachineCode = "s"; //hardcoded chars in firmware
-    private final String stopMachineCode = "p";
-    private final String lockMachineCode = "L";
-    private final String speedIncreaseCode = "+";
-    private final String speedDecreaseCode = "-";
+    @Value("${serial.pass-code}")
+    private String password ; //hardcoded string in firmware
+
+    @Value("${serial.start-machine-code}")
+    private String startMachineCode; //hardcoded chars in firmware
+
+    @Value("${serial.stop-machine-code}")
+    private  String stopMachineCode ;
+
+    @Value("${serial.lock-machine-code}")
+    private String lockMachineCode ;
+
+    @Value("${serial.speed-increase-code}")
+    private  String speedIncreaseCode ;
+
+    @Value("${serial.speed-decrease-code}")
+    private String speedDecreaseCode ;
 
     public SerialService(TelemetryService telemetryService){
         this.telemetryService = telemetryService;

@@ -109,6 +109,7 @@ public class MachineService {
     }
 
     public void machineSpeedIncrease(){
+        checkConnection();
         if(PR3 < 4000){
             PR3 = 10000;
             logger.warn("Machine speed below 4000, looping back to 10000"); //syncing it to match the firmware implementation
@@ -121,6 +122,7 @@ public class MachineService {
     }
 
     public void machineSpeedDecrease(){
+        checkConnection();
         serialService.machineSpeedDecrease();
         PR3 += 2000;
         logger.info("Machine speed decreased");
