@@ -3,6 +3,7 @@ package com.kailas.TelemetryHub.service;
 
 import com.kailas.TelemetryHub.exception.*;
 import com.kailas.TelemetryHub.model.SerialStatus;
+import com.kailas.TelemetryHub.serial.SerialInterface;
 import com.kailas.TelemetryHub.serial.SerialService;
 import org.springframework.stereotype.Service;
 import org.slf4j.Logger;
@@ -16,14 +17,14 @@ import static java.lang.Boolean.TRUE;
 @Service
 public class MachineService {
 
-    private final SerialService serialService;
+    private final SerialInterface serialService;
     private static final Logger logger = LoggerFactory.getLogger(MachineService.class);
 
     private int PR3 = 10000;
     private boolean isLocked = TRUE;
     private boolean isRunning = FALSE;
 
-    public MachineService(SerialService serialService){
+    public MachineService(SerialInterface serialService){
 
         this.serialService = serialService;
     }

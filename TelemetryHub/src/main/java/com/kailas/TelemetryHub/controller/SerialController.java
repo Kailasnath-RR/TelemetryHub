@@ -2,6 +2,7 @@ package com.kailas.TelemetryHub.controller;
 
 
 import com.kailas.TelemetryHub.model.SerialStatus;
+import com.kailas.TelemetryHub.serial.SerialInterface;
 import com.kailas.TelemetryHub.serial.SerialService;
 import com.kailas.TelemetryHub.service.MachineService;
 import org.springframework.http.ResponseEntity;
@@ -13,10 +14,10 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/serial")
 public class SerialController {
-    private final SerialService serialService;
+    private final SerialInterface serialService;
     private final MachineService machineService;
 
-    public SerialController(SerialService serialService,MachineService machineService){
+    public SerialController(SerialInterface serialService,MachineService machineService){
         this.machineService = machineService;
         this.serialService = serialService;
     }

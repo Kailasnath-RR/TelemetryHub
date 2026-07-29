@@ -9,6 +9,7 @@ import com.kailas.TelemetryHub.model.SerialStatus;
 import com.kailas.TelemetryHub.service.TelemetryService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.context.annotation.Profile;
 import org.springframework.context.event.ContextClosedEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
@@ -20,7 +21,8 @@ import static java.lang.Boolean.FALSE;
 
 
 @Component
-public class SerialService implements CommandLineRunner {
+@Profile("dev")
+public class SerialService implements CommandLineRunner,SerialInterface {
 
     SerialPort comPort = null;
 
@@ -72,27 +74,34 @@ public class SerialService implements CommandLineRunner {
         this.telemetryService = telemetryService;
     }
 
+    @Override
     public void unlockMachine() {
         sendData(password);
     }
 
+    @Override
     public void startMachine() {
         sendData(startMachineCode);
     }
 
+    @Override
     public void stopMachine() {
         sendData(stopMachineCode);
     }
 
+    @Override
     public void lockMachine() {
         sendData(lockMachineCode);
     }
 
+    @Override
     public void machineSpeedIncrease(){sendData(speedIncreaseCode);}
 
+    @Override
     public void machineSpeedDecrease(){sendData(speedDecreaseCode);}
 
 
+    @Override
     public void connect(){
         SerialPort[] portNames = SerialPort.getCommPorts();
         for(SerialPort port:portNames){
@@ -123,6 +132,8 @@ public class SerialService implements CommandLineRunner {
             readData = new BufferedReader(new InputStreamReader(in));
 
     }
+
+    @Override
     public void disconnect(){
         shutdownHardware();
 
@@ -154,6 +165,7 @@ public class SerialService implements CommandLineRunner {
 
     }
 
+    @Override
     public void reconnect(){
         disconnect();
         connect();
@@ -172,6 +184,7 @@ public class SerialService implements CommandLineRunner {
 
 
 
+    @Override
     public SerialStatus status(){
         boolean Lconnected = isConnected;
         String LportName;
@@ -198,6 +211,7 @@ public class SerialService implements CommandLineRunner {
         return null;
     }
 
+    @Override
     public synchronized void shutdownHardware() {
         if (!isRunning) return; // Prevent duplicate cleanup execution
         logger.info("Initiating graceful shutdown sequence...");
