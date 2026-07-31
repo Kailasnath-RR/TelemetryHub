@@ -1,7 +1,6 @@
 package com.kailas.TelemetryHub.serial;
 
 import com.kailas.TelemetryHub.exception.SerialCommunicationException;
-import com.kailas.TelemetryHub.service.MachineService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.fazecast.jSerialComm.SerialPort;
