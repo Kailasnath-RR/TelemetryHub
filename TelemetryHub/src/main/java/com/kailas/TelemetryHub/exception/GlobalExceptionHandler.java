@@ -61,4 +61,10 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
     }
 
+    @ExceptionHandler(InvalidRefreshTokenException.class)
+    public ResponseEntity<ErrorResponse> invalidRefreshToken(InvalidRefreshTokenException ex){
+        ErrorResponse errorResponse = new ErrorResponse(Instant.now(),400,"invalid_grant",ex.getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+    }
+
 }

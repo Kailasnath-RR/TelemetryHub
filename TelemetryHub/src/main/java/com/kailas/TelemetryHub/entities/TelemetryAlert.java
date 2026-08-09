@@ -5,7 +5,7 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "TelemetryAlert")
+@Table(name = "telemetry_alert")
 @Getter
 @Setter
 @Builder
@@ -13,11 +13,11 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class TelemetryAlert {
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @ManyToOne
-    @JoinColumn(name = "telemetry_id")
+    @JoinColumn(name = "telemetry_entity_id")
     private TelemetryEntity telemetry;
 
     private LocalDateTime createdAt;

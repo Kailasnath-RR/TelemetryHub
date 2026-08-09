@@ -1,7 +1,6 @@
 package com.kailas.TelemetryHub.security.dto;
 
-public record LoginResponse(
-        String accessToken,
+public record RefreshTokenRequest(
         String refreshToken
 ) {
 }
