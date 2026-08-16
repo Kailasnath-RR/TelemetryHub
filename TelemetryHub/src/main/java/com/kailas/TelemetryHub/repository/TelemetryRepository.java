@@ -21,26 +21,24 @@ public interface TelemetryRepository extends JpaRepository<TelemetryEntity,Long>
 
     Page<TelemetryEntity> findByadcValueLessThan(Integer adcMax, Pageable pageable);
 
-    @Query("""
+        @Query("""
             SELECT NEW com.kailas.TelemetryHub.model.TelemetryStat(
-            AVG(t.adcValue),
-            MIN(t.adcValue),
-            MAX(t.adcValue),
-            COUNT(t))
+                AVG(t.adcValue),
+                COALESCE(MIN(t.adcValue), 0),
+                COALESCE(MAX(t.adcValue), 0),
+                COUNT(t)
+            )
             FROM TelemetryEntity t
-            WHERE (:from IS NULL OR t.receivedAt >=:from)
-                       and
-                  (:to IS NULL OR t.receivedAt<= :to)
-                       and
-                  (:minAdc IS NULL OR t.adcValue >=:minAdc)
-                        and
-                   (:maxAdc IS NULL OR t.adcValue <=:maxAdc)
-           """)
-    TelemetryStat findStats(
-            @Param("from")LocalDateTime from,
-            @Param("to")LocalDateTime to,
-            @Param("minAdc")Integer minAdc,
-            @Param("maxAdc")Integer maxAdc
-            );
+            WHERE (cast(:from as java.time.LocalDateTime) IS NULL OR t.receivedAt >= :from)
+              AND (cast(:to as java.time.LocalDateTime) IS NULL OR t.receivedAt <= :to)
+              AND (cast(:minAdc as integer) IS NULL OR t.adcValue >= :minAdc)
+              AND (cast(:maxAdc as integer) IS NULL OR t.adcValue <= :maxAdc)
+        """)
+        TelemetryStat findStats(
+                @Param("from")LocalDateTime from,
+                @Param("to")LocalDateTime to,
+                @Param("minAdc")Integer minAdc,
+                @Param("maxAdc")Integer maxAdc
+                );
 
 }
