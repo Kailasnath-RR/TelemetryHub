@@ -2,10 +2,14 @@ import { useState, useEffect, useRef } from 'react';
 import { Client } from '@stomp/stompjs';
 
 const getWsUrl = () => {
-  const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
-  const wsProtocol = baseUrl.startsWith('https') ? 'wss' : 'ws';
-  const host = baseUrl.replace(/^https?:\/\//, '');
-  return `${wsProtocol}://${host}/ws`;
+  const baseUrl = import.meta.env.VITE_API_BASE_URL;
+  if (baseUrl) {
+    const wsProtocol = baseUrl.startsWith('https') ? 'wss' : 'ws';
+    const host = baseUrl.replace(/^https?:\/\//, '');
+    return `${wsProtocol}://${host}/ws`;
+  }
+  const wsProtocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
+  return `${wsProtocol}://${window.location.host}/ws`;
 };
 
 export function useWebSocket() {
