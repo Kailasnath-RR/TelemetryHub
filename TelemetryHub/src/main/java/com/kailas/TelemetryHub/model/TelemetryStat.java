@@ -1,8 +1,8 @@
 package com.kailas.TelemetryHub.model;
 
 public record TelemetryStat(Double averageAdc,
-                            int minAdc,
-                            int maxAdc,
+                            Integer minAdc,
+                            Integer maxAdc,
                             Long totalSamples
                                 ) {
 }

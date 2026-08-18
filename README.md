@@ -1,284 +1,192 @@
 # TelemetryHub
 
-A Spring Boot backend for monitoring and controlling an embedded system over UART.
+A full-stack, real-time IoT monitoring and control platform for embedded systems over UART.
 
-TelemetryHub communicates with a dsPIC microcontroller through a serial connection, receives live telemetry packets, parses them into structured objects, and exposes REST APIs for monitoring and machine control.
-
-This project is part of my embedded systems and backend engineering learning journey.
+TelemetryHub communicates with a dsPIC microcontroller through a serial connection, parses live telemetry packets, stores telemetry history in PostgreSQL, broadcasts updates over STOMP WebSockets, and exposes secure REST APIs protected by JWT authentication and Role-Based Access Control (RBAC).
 
 ---
 
-## Features
+## Architecture Overview
 
-### Telemetry
+```
+                      Browser Client (HTTP / WS)
+                                  │
+                                  ▼
+                    Nginx Reverse Proxy (:80)
+                   ┌──────────────┴──────────────┐
+                   │                             │
+                   ▼                             ▼
+         React SPA Static Files        Spring Boot Backend (:8080)
+                                                 │
+                                     ┌───────────┴───────────┐
+                                     ▼                       ▼
+                           PostgreSQL DB (:5432)     UART Serial Port
+                                                             │
+                                                             ▼
+                                                        dsPIC33 MCU
+```
 
-- Maintain telemetry history
-- Paginated telemetry history retrieval
-- ADC value filtering
-- Expose telemetry through REST APIs
+### Production Docker Container Stack
 
-### Machine Control
+- **`frontend`** (Nginx + React SPA on port `80`)
+- **`backend`** (Spring Boot 3 REST & STOMP WebSocket service on port `8080`)
+- **`postgres`** (PostgreSQL 17 persistent database on port `5432`)
 
-Control the embedded device through REST endpoints:
+---
 
-- Start Machine
-- Stop Machine
-- Lock Machine
-- Unlock Machine
-- Shutdown Hardware
+## Key Features
 
-Commands are transmitted to the microcontroller over UART.
+### 1. Real-Time Telemetry & STOMP WebSockets
+- **Live Packet Stream:** Live reception of ADC values, sample counts, and sample period metrics broadcasted over STOMP WebSockets (`/ws -> /topic/telemetry`).
+- **Live Machine Status:** Real-time state change broadcasts (`/topic/status`).
+- **Real-Time Threshold Alerts:** Automatic alert creation when ADC readings exceed configured voltage thresholds (`> 900`).
 
-### Serial Port Management
-- Connect to the configured serial port.
-- Disconnect safely by stopping the reader thread and closing the port.
-- Reconnect to the device without restarting the application.
-- Query the current serial connection status.
+### 2. Telemetry Analytics & Historical Data
+- **Paginated History:** Browse past telemetry logs with page navigation (`Next` / `Previous`).
+- **Range Filtering:** Filter telemetry records by `adcMin` and `adcMax`.
+- **Aggregate Statistics:** Query average ADC, min ADC, max ADC, and total sample counts with custom timestamp (`from` / `to`) and ADC range filters (`/telemetry/stats`).
 
-### REST API
-- REST endpoints for telemetry, machine control, and serial management.
-- Clean layered architecture separating controllers, services, and models.
+### 3. Machine Control & State Guarding
+- **Hardware Control Endpoints:** Start, Stop, Lock, Unlock, Shutdown, Speed +, and Speed -.
+- **State Validation & Error Handling:** Backend prevents invalid transitions (e.g. starting an already running machine) and returns clean `ErrorResponse` DTOs via a `@ControllerAdvice` global exception handler.
 
-### Reliability
-- Dedicated UART reader thread.
-- Graceful shutdown of serial communication.
-- Safe reconnection support.
+### 4. Serial Port Management
+- **Safe Connection Control:** Connect, disconnect, and reconnect UART serial interfaces without restarting the Spring Boot application.
+- **Port Status Monitoring:** Inspect active port status (`connected`, `portName`).
+
+### 5. Security & Role-Based Access Control (RBAC)
+- **Stateless JWT Authentication:** Secure `/auth/login`, `/auth/me`, `/auth/refresh`, and `/auth/logout` endpoints.
+- **Granular Roles (`ADMIN`, `OPERATOR`, `VIEWER`):**
+  - `ADMIN`: Full access (Machine Control, Serial Control, Telemetry).
+  - `OPERATOR`: Machine Control and Telemetry.
+  - `VIEWER`: Read-only access to Telemetry and Status.
+- **Graceful Frontend Enforcement:** Captures HTTP `403 Forbidden` responses and displays clear authorization notices.
+
+### 6. React + Vite Frontend Dashboard
+- **Modern Dashboard UI:** Built with React 18, Vite 5, JavaScript, and Vanilla CSS.
+- **Tabbed Authentication:** Login and user registration interface.
+- **Interactive Controls & Status Badges:** Visual machine control buttons, serial status, and live WebSocket connection badges (`Connected` / `Connecting` / `Disconnected`).
+
+### 7. Dockerization & Nginx Reverse Proxy
+- **Single-Origin Deployment:** Nginx proxies REST requests (`/auth`, `/machine`, `/serial`, `/telemetry`) and WebSocket upgrades (`/ws`) to the backend container.
+- **Single Command Launch:** Complete environment orchestrator via `docker compose up`.
+
 ---
 
 ## Tech Stack
 
-- Java 17
-- Spring Boot 3
-- Maven
-- jSerialComm
-- REST API
-- UART Serial Communication
+### Backend
+- **Java 17 & Spring Boot 3**
+- **Spring Security** (JWT Authentication & RBAC)
+- **Spring Data JPA & Flyway** (Database Migrations)
+- **Spring WebSocket / STOMP**
+- **PostgreSQL 17**
+- **jSerialComm** (UART Serial Communication)
+- **OpenAPI / Swagger UI**
 
-Embedded Hardware
+### Frontend
+- **React 18 & Vite 5**
+- **JavaScript & Vanilla CSS**
+- **@stomp/stompjs** (STOMP Client over WebSockets)
+- **Nginx** (Reverse Proxy & Static Asset Server)
 
-- Microchip dsPIC33
-- MPLAB X IDE
-- XC16 Compiler
-
----
-
-## Architecture
-
-```
-                   HTTP
-
-                    │
-                    ▼
-        +----------------------+
-        | TelemetryController  |
-        | MachineController    |        
-        | ServiceController    |
-        +----------------------+
-                    │
-                    ▼
-        +----------------------+
-        |  TelemetryService    |
-        |  MachineService      |
-        +----------------------+
-                    │
-                    ▼
-        +----------------------+
-        |    SerialService     |
-        +----------------------+
-                    │
-                    ▼
-             UART Serial Port
-                    │
-                    ▼
-                dsPIC33 MCU
-```
+### Embedded Hardware & Firmware
+- **Microchip dsPIC33 MCU**
+- **MPLAB X IDE & XC16 Compiler**
+- **Firmware Repository:** [dsPIC33E ADC DMA UART FIRMWARE](https://github.com/Kailasnath-RR/Embedded_Eng/tree/main/ADC_DMA_UART.X)
 
 ---
 
-## Project Structure
+## REST API Summary
 
-```
-src
- ├── controller
- │     ├── MachineController
- │     └── TelemetryController
- │ 
- ├── service
- │     ├── MachineService
- │     └── TelemetryService
- │
- ├── serial
- │     ├── SerialService
- │     └── SerialParser
- │
- ├── model
- │     ├── TelemetryData
- │     └── TelemetryStatus
- │
- └── TelemetryHubApplication
-```
+### Authentication (`/auth`)
 
----
+| Method | Endpoint | Access | Description |
+| :--- | :--- | :--- | :--- |
+| `POST` | `/auth/register` | Public | Register new user account |
+| `POST` | `/auth/login` | Public | Authenticate user; returns JWT access & refresh tokens |
+| `GET` | `/auth/me` | Authenticated | Retrieve current user profile (`username`, `role`) |
+| `POST` | `/auth/refresh` | Public | Obtain new access token via refresh token |
+| `POST` | `/auth/logout` | Authenticated | Revoke refresh token |
 
-## REST API
+### Machine Control (`/machine`)
 
-### Telemetry
+| Method | Endpoint | Access | Description |
+| :--- | :--- | :--- | :--- |
+| `POST` | `/machine/start` | `ADMIN`, `OPERATOR` | Start ADC transmission over UART |
+| `POST` | `/machine/stop` | `ADMIN`, `OPERATOR` | Stop transmission |
+| `POST` | `/machine/lock` | `ADMIN`, `OPERATOR` | Lock transmission line |
+| `POST` | `/machine/unlock` | `ADMIN`, `OPERATOR` | Unlock transmission line |
+| `POST` | `/machine/shutdownHardware` | `ADMIN`, `OPERATOR` | Gracefully shut down hardware |
+| `POST` | `/machine/speed-increase` | `ADMIN`, `OPERATOR` | Increase sampling rate |
+| `POST` | `/machine/speed-decrease` | `ADMIN`, `OPERATOR` | Decrease sampling rate |
 
-| Method | Endpoint                                   | Description                      |
-|--------|--------------------------------------------|----------------------------------|
-| GET    | `/telemetry/latest/data`                   | Latest telemetry values          |
-| GET    | `/telemetry/latest/status`                 | Latest machine status            |
-| GET    | `/telemetry/history`                       | Paginated telemetry history      |
-| GET    | `/telemetry/history?adcMin=112`            | FIlter by greater than adc value | 
-| GET    | `/telemetry/history?adcMin=100&adcMax=500` | Filter adc value by range        |
-| GET    | `/telemetry/stats`                         | Gets stats related to values, can apply `from` & `to` filters for timestamp based filtering and `adcMin` and `adcMax` filters for adc values based filtering|
-### Machine Control
+### Serial Management (`/serial`)
 
-| Method | Endpoint                  | Description |
-|--------|---------------------------|-------------|
-| POST   | `/machine/start`          | Start machine |
-| POST   | `/machine/stop`           | Stop machine |
-| POST   | `/machine/lock`           | Lock machine |
-| POST   | `/machine/unlock`         | Unlock machine |
-| POST   | `/machine/shutdownHardware` | Gracefully shut down hardware | 
-| POST   | `/machine/speed-increase` |Increase sampling rate|
-| POST   | `/machine/speed-decrease` |Decrease sampling rate|
-### Serial Communication
+| Method | Endpoint | Access | Description |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/serial/status` | `ADMIN` | Query current serial port status |
+| `POST` | `/serial/reconnect` | `ADMIN` | Reconnect serial port and reset state |
+| `POST` | `/serial/disconnect` | `ADMIN` | Safely disconnect serial communication |
 
-| Method | Endpoint | Description |
-|---------|----------|-------------|
-| POST | `/serial/connect` | Open serial connection |
-| POST | `/serial/disconnect` | Safely disconnect serial communication |
-| POST | `/serial/reconnect` | Reconnect to the configured serial port |
-| GET | `/serial/status` | Retrieve current serial connection status |
+### Telemetry (`/telemetry`)
 
-## Example Requests
+| Method | Endpoint | Access | Description |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/telemetry/latest/data` | Authenticated | Retrieve latest telemetry record |
+| `GET` | `/telemetry/latest/status` | Authenticated | Retrieve latest machine status |
+| `GET` | `/telemetry/history` | Authenticated | Paginated telemetry history (`page`, `size`, `adcMin`, `adcMax`) |
+| `GET` | `/telemetry/stats` | Authenticated | Query aggregate stats (`from`, `to`, `minAdc`, `maxAdc`) |
 
-Start Machine
+### WebSockets (`/ws`)
 
-```http
-POST /machine/start
-```
-
-Retrieve Latest Telemetry
-
-```http
-GET /telemetry/latest/data
-```
+| Protocol | Destination | Description |
+| :--- | :--- | :--- |
+| STOMP | `/topic/telemetry` | Real-time `TelemetryData` broadcast (`Count`, `AdcValue`, `SamplePeriod`, `receivedAt`) |
+| STOMP | `/topic/status` | Real-time `TelemetryStatus` broadcast (`State`, `receivedAt`) |
 
 ---
 
-## Current Capabilities
+## How to Run the Project
 
-✔ Connect to dsPIC over UART
+### Option 1: Docker Compose (Recommended Production Run)
 
-✔ Send machine control commands
+1. Create a `.env` file in the root directory:
+   ```env
+   DB_USERNAME=telemetry_app
+   DB_PASSWORD=your_db_password
+   JWT_SECRET=your_jwt_secret_key_here
+   ```
 
-✔ Adjust machine sampling speed
+2. Launch all services:
+   ```bash
+   docker compose up --build
+   ```
 
-✔ Receive and parse telemetry packets
-
-✔ Broadcast live telemetry over WebSockets
-
-✔ Persist telemetry history to a database
-
-✔ Retrieve telemetry history through REST endpoints
-
-✔ Pagination support
-
-✔ Telemetry filtering using Spring Data derived query methods
-
-✔ DTO based paginated API responses
-
-### Machine State
-`(Global Exception Handler used here)`
-
-The backend maintains machine state to prevent invalid commands such as:
-
-- Starting an already running machine
-- Unlocking an already unlocked machine
-- Locking an already locked machine
-- Stopping an already stopped machine
-
-The state is reset after a reconnect since the disconnect sequence always stops and locks the hardware.
-
-## Database
-
-Telemetry packets are automatically persisted using Spring Data JPA.
-
-Current database:
-- H2 (In-Memory)
-
-Future migration:
-- PostgreSQL
-
-### Database Design
-
-### Telemetry
-
-| Column | Description |
-|---------|-------------|
-| id | Primary Key |
-| count | Packet counter |
-| adcValue | ADC reading |
-| samplePeriod | Sampling interval |
-| receivedAt | Timestamp |
-
-### TelemetryAlert
-
-| Column | Description |
-|---------|-------------|
-| id | Primary Key |
-| telemetry_id | Foreign key to Telemetry |
-| createdAt | Alert timestamp |
-| message | Alert message |
-
-### Planned
-
-- Database (PostgreSQL otw)
-- Authentication
-- Frontend dashboard
-- Docker deployment
-- Machine state management
-- API documentation (OpenAPI / Swagger)
-- better state persistence and sync with the MCU 
----
-
-## Learning Goals
-
-This project is being built to gain practical experience with:
-
-- Spring boot
-- REST API Design
-- DTO Mapping
-- Records
-- Pagination
-- JPQL
-- Constructor Projections
-- Aggregate Queries
-- Optional Query Filters
-- WebSockets
-- Serial Communication
-- Entity Relationships
-- Many-to-One Mapping
-- Repository Pattern
-- Service Layer Architecture
+3. Access the applications:
+   - **Frontend Dashboard:** [http://localhost](http://localhost)
+   - **Backend API / Swagger UI:** [http://localhost:8080/swagger-ui/index.html](http://localhost:8080/swagger-ui/index.html)
 
 ---
-## Related Projects
 
-### Embedded Firmware
+### Option 2: Local Development Mode
 
-The firmware running on the dsPIC33 microcontroller is available here:
+#### 1. Backend
+```bash
+cd TelemetryHub
+./mvnw spring-boot:run
+```
 
-- [dsPIC33E ADC DMA UART FIRMWARE](https://github.com/Kailasnath-RR/Embedded_Eng/tree/main/ADC_DMA_UART.X)
+#### 2. Frontend
+```bash
+cd frontend
+npm install
+npm run dev
+```
+The Vite development server will start at `http://localhost:3000`.
 
-The firmware is responsible for:
+---
 
-- UART communication
-- Sensor acquisition
-- Machine control
-- Telemetry packet generation
 ## Author
 
-Kailasnath R
+**Kailasnath R**

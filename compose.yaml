@@ -1,0 +1,41 @@
+services:
+
+  postgres:
+    image: postgres:17
+    container_name: telemetryhub-postgres
+
+    environment:
+      POSTGRES_DB: telemetryhub
+      POSTGRES_USER: telemetry_app
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+    ports:
+      - "5432:5432"
+  backend:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    image: telemetryhub-backend:latest
+
+    environment:
+        SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/telemetryhub
+        SPRING_DATASOURCE_USERNAME: ${DB_USERNAME}
+        SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
+        JWT_SECRET: ${JWT_SECRET}
+    ports:
+      - "8080:8080"
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    image: telemetryhub-frontend:latest
+    ports:
+      - "80:80"
+
+    depends_on:
+      - backend
+volumes:
+  postgres_data:

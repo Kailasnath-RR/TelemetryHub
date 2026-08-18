@@ -5,6 +5,7 @@ import com.kailas.TelemetryHub.security.jwt.JwtAuthenticationFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -28,6 +29,7 @@ public class SecurityConfig {
         http
                 .headers(headers->headers.frameOptions(frame->frame.sameOrigin()))
                 .csrf(csrf-> csrf.disable())
+                .cors(Customizer.withDefaults())
                 .sessionManagement(
                         session-> session.sessionCreationPolicy(
                                 SessionCreationPolicy.STATELESS))
@@ -36,7 +38,6 @@ public class SecurityConfig {
                         "/auth/**",
                         "/swagger-ui/**",
                         "/v3/api-docs/**",
-                                "/h2-console/**",
                                 "/ws/**",
                                 "/ws"
                 ).permitAll().anyRequest().authenticated())
